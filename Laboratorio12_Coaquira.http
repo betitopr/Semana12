@@ -1,0 +1,35 @@
+@Laboratorio12_Coaquira_HostAddress = http://localhost:5252
+
+### 1. Verificar que la aplicación está funcionando
+GET {{Laboratorio12_Coaquira_HostAddress}}/
+Accept: application/json
+
+### 2. Crear un Job Fire-and-Forget (ejecución inmediata)
+POST {{Laboratorio12_Coaquira_HostAddress}}/api/notification/fire-and-forget
+Content-Type: application/json
+
+### 3. Crear un Job Delayed (ejecución en 10 minutos)
+POST {{Laboratorio12_Coaquira_HostAddress}}/api/notification/delayed
+Content-Type: application/json
+
+### 4. Configurar/Actualizar Job Recurrente (diario)
+POST {{Laboratorio12_Coaquira_HostAddress}}/api/notification/recurring
+Content-Type: application/json
+
+### 5. Paso 8: Simular fallo para verificar reintentos automáticos
+POST {{Laboratorio12_Coaquira_HostAddress}}/api/notification/simulate-failure
+Content-Type: application/json
+
+### 6. Actividad Adicional: Ejecutar limpieza de datos manualmente
+POST {{Laboratorio12_Coaquira_HostAddress}}/api/notification/cleanup-data
+Content-Type: application/json
+
+### 7. Actividad Adicional: Limpieza de datos con posible fallo (66% probabilidad)
+POST {{Laboratorio12_Coaquira_HostAddress}}/api/notification/cleanup-data-with-failure
+Content-Type: application/json
+
+### 8. Actividad Adicional: Obtener estadísticas de datos
+GET {{Laboratorio12_Coaquira_HostAddress}}/api/notification/data-statistics
+Accept: application/json
+
+###
