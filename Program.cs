@@ -20,18 +20,14 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // --- Configurar Hangfire con MySQL ---
-builder.Services.AddHangfire(config =>
-    config.UseStorage(
-        new MySqlStorage(
-            builder.Configuration.GetConnectionString("DefaultConnection"),
-            new MySqlStorageOptions
-            {
-                QueuePollInterval = TimeSpan.FromSeconds(15),
-                TransactionIsolationLevel = System.Transactions.IsolationLevel.ReadCommitted
-            }
-        )
-    )
-);
+var connectionString = $"Server={Environment.GetEnvironmentVariable("MYSQL_HOST")};" +
+                       $"Port=3306;" +
+                       $"Database={Environment.GetEnvironmentVariable("MYSQL_DATABASE")};" +
+                       $"User ID={Environment.GetEnvironmentVariable("MYSQL_USER")};" +
+                       $"Password={Environment.GetEnvironmentVariable("MYSQL_PASSWORD")};" +
+                       $"Allow User Variables=True";
+
+GlobalConfiguration.Configuration.UseStorage(new MySqlStorage(connectionString));
 
 // --- Servidor de ejecución de Hangfire ---
 builder.Services.AddHangfireServer();
