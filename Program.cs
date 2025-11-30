@@ -13,41 +13,62 @@ builder.Logging.SetMinimumLevel(LogLevel.Information);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// --- Documentación Swagger (opcional, pero útil) ---
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Laboratorio12 API", Version = "v1" });
 });
 
-// --- Configurar Hangfire con MySQL ---
-// Obtener configuración de variables de entorno o appsettings.json
-var mysqlHost = builder.Configuration["MYSQL_HOST"] ?? 
-                Environment.GetEnvironmentVariable("MYSQL_HOST") ?? 
-                "localhost";
+// --- Configurar MySQL Connection String ---
+string connectionString;
 
-var mysqlPort = builder.Configuration["MYSQL_PORT"] ?? 
-                Environment.GetEnvironmentVariable("MYSQL_PORT") ?? 
-                "3306";
+// Intentar leer DATABASE_URL primero (Railway/Render style)
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL") 
+                  ?? builder.Configuration["DATABASE_URL"];
 
-var mysqlDatabase = builder.Configuration["MYSQL_DATABASE"] ?? 
-                    Environment.GetEnvironmentVariable("MYSQL_DATABASE") ?? 
-                    "hangfiredb";
-
-var mysqlUser = builder.Configuration["MYSQL_USER"] ?? 
-                Environment.GetEnvironmentVariable("MYSQL_USER") ?? 
-                "root";
-
-var mysqlPassword = builder.Configuration["MYSQL_PASSWORD"] ?? 
-                    Environment.GetEnvironmentVariable("MYSQL_PASSWORD") ?? 
-                    "";
-
-// Construir connection string
-var connectionString = $"Server={mysqlHost};" +
+if (!string.IsNullOrEmpty(databaseUrl) && databaseUrl.StartsWith("mysql://"))
+{
+    // Parsear URL: mysql://user:password@host:port/database
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
+    
+    connectionString = $"Server={uri.Host};" +
+                      $"Port={uri.Port};" +
+                      $"Database={uri.AbsolutePath.TrimStart('/')};" +
+                      $"User ID={userInfo[0]};" +
+                      $"Password={userInfo[1]};" +
+                      $"Allow User Variables=True;" +
+                      $"SslMode=None;";
+    
+    Console.WriteLine($"✅ Conectando a Railway: {uri.Host}:{uri.Port}/{uri.AbsolutePath.TrimStart('/')}");
+}
+else
+{
+    // Fallback a variables individuales (desarrollo local)
+    var mysqlHost = Environment.GetEnvironmentVariable("MYSQL_HOST") 
+                    ?? builder.Configuration["MYSQL_HOST"] 
+                    ?? "localhost";
+    var mysqlPort = Environment.GetEnvironmentVariable("MYSQL_PORT") 
+                    ?? builder.Configuration["MYSQL_PORT"] 
+                    ?? "3306";
+    var mysqlDatabase = Environment.GetEnvironmentVariable("MYSQL_DATABASE") 
+                        ?? builder.Configuration["MYSQL_DATABASE"] 
+                        ?? "hangfiredb";
+    var mysqlUser = Environment.GetEnvironmentVariable("MYSQL_USER") 
+                    ?? builder.Configuration["MYSQL_USER"] 
+                    ?? "root";
+    var mysqlPassword = Environment.GetEnvironmentVariable("MYSQL_PASSWORD") 
+                        ?? builder.Configuration["MYSQL_PASSWORD"] 
+                        ?? "";
+    
+    connectionString = $"Server={mysqlHost};" +
                        $"Port={mysqlPort};" +
                        $"Database={mysqlDatabase};" +
                        $"User ID={mysqlUser};" +
                        $"Password={mysqlPassword};" +
                        $"Allow User Variables=True;";
+    
+    Console.WriteLine($"📍 Conectando a MySQL local: {mysqlHost}:{mysqlPort}/{mysqlDatabase}");
+}
 
 // Configurar Hangfire con MySQL Storage
 builder.Services.AddHangfire(config =>
@@ -60,48 +81,38 @@ builder.Services.AddHangfire(config =>
         PrepareSchemaIfNecessary = true,
         DashboardJobListLimit = 50000,
         TransactionTimeout = TimeSpan.FromMinutes(1)
-        // ✅ TransactionIsolationLevel eliminado - no es necesario
     })));
 
-// --- Servidor de ejecución de Hangfire ---
 builder.Services.AddHangfireServer();
 
-// --- Registrar tus servicios personalizados ---
 builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<DataCleanupService>();
 
 var app = builder.Build();
 
-// --- Configurar pipeline HTTP ---
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Solo redirigir HTTPS en producción
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
 
-// --- Dashboard de Hangfire ---
 app.UseHangfireDashboard("/hangfire");
 
-// --- Jobs recurrentes ---
-// Job recurrente de notificaciones (diario a medianoche)
 RecurringJob.AddOrUpdate<NotificationService>(
     "job-notificacion-diaria",
     x => x.SendNotification("usuario_diario"),
     Cron.Daily
 );
 
-// Job recurrente de limpieza de datos (cada hora para demostración)
-// En producción, podrías usar Cron.Weekly() o Cron.Monthly()
 RecurringJob.AddOrUpdate<DataCleanupService>(
     "job-limpieza-datos",
     x => x.CleanupOldData(),
-    Cron.Hourly, // Cambiar a Cron.Weekly() o Cron.Monthly() en producción
+    Cron.Hourly,
     new RecurringJobOptions
     {
         TimeZone = TimeZoneInfo.Local
@@ -110,7 +121,6 @@ RecurringJob.AddOrUpdate<DataCleanupService>(
 
 app.MapControllers();
 
-// Endpoint de salud simple
 app.MapGet("/", () => new { 
     status = "running", 
     message = "Laboratorio12 API está funcionando",
@@ -124,7 +134,5 @@ var url = $"http://0.0.0.0:{port}";
 
 logger.LogInformation("Aplicación iniciando en {Url}", url);
 logger.LogInformation("Dashboard Hangfire disponible en {Url}/hangfire", url);
-logger.LogInformation("Swagger disponible en {Url}/swagger", url);
-logger.LogInformation("MySQL Host: {Host}, Database: {Database}", mysqlHost, mysqlDatabase);
 
 app.Run(url);
