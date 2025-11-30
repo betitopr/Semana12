@@ -2,6 +2,7 @@ using Hangfire;
 using Hangfire.MySql;
 using Microsoft.OpenApi.Models;
 using System.Data;
+using IsolationLevel = System.Transactions.IsolationLevel;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -59,13 +60,13 @@ builder.Services.AddHangfire(config =>
     config.UseStorage(new MySqlStorage(connectionString, new MySqlStorageOptions
     {
         TablesPrefix = "Hangfire",
-        using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted);
         QueuePollInterval = TimeSpan.FromSeconds(15),
         JobExpirationCheckInterval = TimeSpan.FromHours(1),
         CountersAggregateInterval = TimeSpan.FromMinutes(5),
         PrepareSchemaIfNecessary = true,
         DashboardJobListLimit = 50000,
         TransactionTimeout = TimeSpan.FromMinutes(1),
+        TransactionIsolationLevel = (IsolationLevel?)System.Data.IsolationLevel.ReadCommitted
     })));
 
 // --- Servidor de ejecución de Hangfire ---
@@ -94,7 +95,6 @@ if (!app.Environment.IsDevelopment())
 app.UseHangfireDashboard("/hangfire");
 
 // --- Jobs recurrentes ---
-
 // Job recurrente de notificaciones (diario a medianoche)
 RecurringJob.AddOrUpdate<NotificationService>(
     "job-notificacion-diaria",
