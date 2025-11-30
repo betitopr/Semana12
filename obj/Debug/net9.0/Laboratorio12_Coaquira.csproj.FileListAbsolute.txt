@@ -108,3 +108,4 @@ C:\Users\ASUS\RiderProjects\Laboratorio12_Coaquira\Laboratorio12_Coaquira\obj\De
 C:\Users\ASUS\RiderProjects\Laboratorio12_Coaquira\Laboratorio12_Coaquira\obj\Debug\net9.0\Laboratorio12_Coaquira.pdb
 C:\Users\ASUS\RiderProjects\Laboratorio12_Coaquira\Laboratorio12_Coaquira\obj\Debug\net9.0\Laboratorio12_Coaquira.genruntimeconfig.cache
 C:\Users\ASUS\RiderProjects\Laboratorio12_Coaquira\Laboratorio12_Coaquira\obj\Debug\net9.0\ref\Laboratorio12_Coaquira.dll
+C:\Users\ASUS\RiderProjects\Laboratorio12_Coaquira\Laboratorio12_Coaquira\obj\Debug\net9.0\Laboratorio12_Coaquira.sourcelink.json
