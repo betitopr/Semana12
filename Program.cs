@@ -1,6 +1,7 @@
 using Hangfire;
 using Hangfire.MySql;
 using Microsoft.OpenApi.Models;
+using System.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,7 +59,7 @@ builder.Services.AddHangfire(config =>
     config.UseStorage(new MySqlStorage(connectionString, new MySqlStorageOptions
     {
         TablesPrefix = "Hangfire",
-        TransactionIsolationLevel = System.Data.IsolationLevel.ReadCommitted,
+        using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted);
         QueuePollInterval = TimeSpan.FromSeconds(15),
         JobExpirationCheckInterval = TimeSpan.FromHours(1),
         CountersAggregateInterval = TimeSpan.FromMinutes(5),
