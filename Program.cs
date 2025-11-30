@@ -1,8 +1,6 @@
 using Hangfire;
 using Hangfire.MySql;
 using Microsoft.OpenApi.Models;
-using System.Data;
-using IsolationLevel = System.Transactions.IsolationLevel;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,7 +23,6 @@ builder.Services.AddSwaggerGen(c =>
 // Obtener configuración de variables de entorno o appsettings.json
 var mysqlHost = builder.Configuration["MYSQL_HOST"] ?? 
                 Environment.GetEnvironmentVariable("MYSQL_HOST") ?? 
-                builder.Configuration.GetConnectionString("MYSQL_HOST") ?? 
                 "localhost";
 
 var mysqlPort = builder.Configuration["MYSQL_PORT"] ?? 
@@ -34,17 +31,14 @@ var mysqlPort = builder.Configuration["MYSQL_PORT"] ??
 
 var mysqlDatabase = builder.Configuration["MYSQL_DATABASE"] ?? 
                     Environment.GetEnvironmentVariable("MYSQL_DATABASE") ?? 
-                    builder.Configuration.GetConnectionString("MYSQL_DATABASE") ?? 
                     "hangfiredb";
 
 var mysqlUser = builder.Configuration["MYSQL_USER"] ?? 
                 Environment.GetEnvironmentVariable("MYSQL_USER") ?? 
-                builder.Configuration.GetConnectionString("MYSQL_USER") ?? 
                 "root";
 
 var mysqlPassword = builder.Configuration["MYSQL_PASSWORD"] ?? 
                     Environment.GetEnvironmentVariable("MYSQL_PASSWORD") ?? 
-                    builder.Configuration.GetConnectionString("MYSQL_PASSWORD") ?? 
                     "";
 
 // Construir connection string
@@ -65,8 +59,8 @@ builder.Services.AddHangfire(config =>
         CountersAggregateInterval = TimeSpan.FromMinutes(5),
         PrepareSchemaIfNecessary = true,
         DashboardJobListLimit = 50000,
-        TransactionTimeout = TimeSpan.FromMinutes(1),
-        TransactionIsolationLevel = (IsolationLevel?)System.Data.IsolationLevel.ReadCommitted
+        TransactionTimeout = TimeSpan.FromMinutes(1)
+        // ✅ TransactionIsolationLevel eliminado - no es necesario
     })));
 
 // --- Servidor de ejecución de Hangfire ---
