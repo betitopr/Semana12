@@ -15,7 +15,13 @@ WORKDIR /app
 COPY --from=build /app/out ./
 
 # Expone el puerto en el que se ejecutará la aplicación
+# Render asignará el puerto dinámicamente
 EXPOSE 80
+EXPOSE 10000
+
+# Variables de entorno para producción
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_URLS=http://0.0.0.0:${PORT:-10000}
 
 # Comando para iniciar la aplicación
 ENTRYPOINT ["dotnet", "Laboratorio12_Coaquira.dll"]

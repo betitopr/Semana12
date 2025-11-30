@@ -1,0 +1,29 @@
+# Configuración para Render.com
+# Este archivo es opcional pero facilita el despliegue
+# Si prefieres configurar manualmente en el dashboard, puedes ignorar este archivo
+
+services:
+  - type: web
+    name: laboratorio12-api
+    env: dotnet
+    buildCommand: dotnet restore && dotnet publish -c Release -o ./publish
+    startCommand: dotnet ./publish/Laboratorio12_Coaquira.dll
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: MYSQL_HOST
+        sync: false  # Debes configurarlo manualmente desde el dashboard
+      - key: MYSQL_PORT
+        value: 3306
+      - key: MYSQL_DATABASE
+        sync: false  # Debes configurarlo manualmente desde el dashboard
+      - key: MYSQL_USER
+        sync: false  # Debes configurarlo manualmente desde el dashboard
+      - key: MYSQL_PASSWORD
+        sync: false  # Debes configurarlo manualmente desde el dashboard (marca como secreto)
+
+databases:
+  - name: laboratorio12-db
+    databaseName: hangfiredb
+    user: hangfire_user
+    plan: free  # Cambia a starter o estándar para producción

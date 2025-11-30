@@ -20,14 +20,52 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // --- Configurar Hangfire con MySQL ---
-var connectionString = $"Server={Environment.GetEnvironmentVariable("MYSQL_HOST")};" +
-                       $"Port=3306;" +
-                       $"Database={Environment.GetEnvironmentVariable("MYSQL_DATABASE")};" +
-                       $"User ID={Environment.GetEnvironmentVariable("MYSQL_USER")};" +
-                       $"Password={Environment.GetEnvironmentVariable("MYSQL_PASSWORD")};" +
-                       $"Allow User Variables=True";
+// Obtener configuración de variables de entorno o appsettings.json
+var mysqlHost = builder.Configuration["MYSQL_HOST"] ?? 
+                Environment.GetEnvironmentVariable("MYSQL_HOST") ?? 
+                builder.Configuration.GetConnectionString("MYSQL_HOST") ?? 
+                "localhost";
 
-GlobalConfiguration.Configuration.UseStorage(new MySqlStorage(connectionString));
+var mysqlPort = builder.Configuration["MYSQL_PORT"] ?? 
+                Environment.GetEnvironmentVariable("MYSQL_PORT") ?? 
+                "3306";
+
+var mysqlDatabase = builder.Configuration["MYSQL_DATABASE"] ?? 
+                    Environment.GetEnvironmentVariable("MYSQL_DATABASE") ?? 
+                    builder.Configuration.GetConnectionString("MYSQL_DATABASE") ?? 
+                    "hangfiredb";
+
+var mysqlUser = builder.Configuration["MYSQL_USER"] ?? 
+                Environment.GetEnvironmentVariable("MYSQL_USER") ?? 
+                builder.Configuration.GetConnectionString("MYSQL_USER") ?? 
+                "root";
+
+var mysqlPassword = builder.Configuration["MYSQL_PASSWORD"] ?? 
+                    Environment.GetEnvironmentVariable("MYSQL_PASSWORD") ?? 
+                    builder.Configuration.GetConnectionString("MYSQL_PASSWORD") ?? 
+                    "";
+
+// Construir connection string
+var connectionString = $"Server={mysqlHost};" +
+                       $"Port={mysqlPort};" +
+                       $"Database={mysqlDatabase};" +
+                       $"User ID={mysqlUser};" +
+                       $"Password={mysqlPassword};" +
+                       $"Allow User Variables=True;";
+
+// Configurar Hangfire con MySQL Storage
+builder.Services.AddHangfire(config =>
+    config.UseStorage(new MySqlStorage(connectionString, new MySqlStorageOptions
+    {
+        TablesPrefix = "Hangfire",
+        TransactionIsolationLevel = System.Data.IsolationLevel.ReadCommitted,
+        QueuePollInterval = TimeSpan.FromSeconds(15),
+        JobExpirationCheckInterval = TimeSpan.FromHours(1),
+        CountersAggregateInterval = TimeSpan.FromMinutes(5),
+        PrepareSchemaIfNecessary = true,
+        DashboardJobListLimit = 50000,
+        TransactionTimeout = TimeSpan.FromMinutes(1),
+    })));
 
 // --- Servidor de ejecución de Hangfire ---
 builder.Services.AddHangfireServer();
@@ -86,8 +124,12 @@ app.MapGet("/", () => new {
 }).WithName("HealthCheck");
 
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
-logger.LogInformation("Aplicación iniciando en http://localhost:5252");
-logger.LogInformation("Dashboard Hangfire disponible en http://localhost:5252/hangfire");
-logger.LogInformation("Swagger disponible en http://localhost:5252/swagger");
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5252";
+var url = $"http://0.0.0.0:{port}";
 
-app.Run();
+logger.LogInformation("Aplicación iniciando en {Url}", url);
+logger.LogInformation("Dashboard Hangfire disponible en {Url}/hangfire", url);
+logger.LogInformation("Swagger disponible en {Url}/swagger", url);
+logger.LogInformation("MySQL Host: {Host}, Database: {Database}", mysqlHost, mysqlDatabase);
+
+app.Run(url);
